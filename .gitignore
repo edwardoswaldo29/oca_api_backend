@@ -1,0 +1,27 @@
+# Entornos virtuales (venv)
+venv/
+.venv/
+env/
+ENV/
+
+# Python: Archivos compilados y caché
+# El asterisco inicial permite que ignore __pycache__ en cualquier subdirectorio
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Variables de entorno (Contiene llaves de Supabase, etc.)
+.env
+.flaskenv
+
+# Bases de datos locales (si llegas a usar SQLite)
+*.db
+*.sqlite3
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDEs y Editores (VS Code, PyCharm)
+.vscode/
+.idea/
