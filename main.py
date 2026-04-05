@@ -1340,27 +1340,16 @@ def auth_logout(db: Client = Depends(get_supabase)):
 
 
 @app.get("/auth/perfil", tags=["🔐 Auth"])
-def auth_get_perfil(usuario_id: str, db: Client = Depends(get_supabase)):
-    """
-    [WEB + USUARIO] Obtiene el perfil completo.
-    Usa tu lógica original de join, pero sin .single() para que no explote.
-    """
+def auth_get_perfil(usuario_id: str): # Quitamos el Depends temporalmente
     try:
-        # Mantenemos tu consulta original: select("*, clientes(*)")
-        # Pero usamos .execute() directamente
-        res = db.table("usuarios").select("*, clientes(*)").eq("id", usuario_id).execute()
-
-        # Si res.data tiene algo, devolvemos el primer elemento [0]
-        if res.data and len(res.data) > 0:
-            return res.data[0]
+        # Usamos la conexión db importada directamente
+        res = db.table("usuarios").select("*").eq("id", usuario_id).execute()
         
-        # Si no hay nada, lanzamos el error que ya conoces
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
+        if not res.data:
+            raise HTTPException(status_code=404, detail=f"ID {usuario_id} no existe en la tabla")
+            
+        return res.data[0]
     except Exception as e:
-        # Si algo falla (como el join), devolvemos un 500 pero con detalle
-        # para que veas qué está pasando en la consola del navegador
-        print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
