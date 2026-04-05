@@ -1342,26 +1342,29 @@ def auth_logout(db: Client = Depends(get_supabase)):
 @app.get("/auth/perfil", tags=["🔐 Auth"])
 def auth_get_perfil(usuario_id: str, db: Client = Depends(get_supabase)):
     try:
-        # 1. Traemos solo el usuario primero para asegurar que existe
+        # Paso 1: Traer SOLO el usuario. Sin joins, sin complicaciones.
         res = db.table("usuarios").select("*").eq("id", usuario_id).execute()
         
-        if not res.data:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        # Si la lista está vacía, no existe
+        if not res.data or len(res.data) == 0:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado en la tabla pública")
         
-        usuario = res.data[0]
+        perfil = res.data[0]
 
-        # 2. Intentamos traer el cliente, pero si no hay, no matamos la app
-        res_cliente = db.table("clientes").select("*").eq("usuario_id", usuario_id).execute()
-        usuario["clientes"] = res_cliente.data[0] if res_cliente.data else None
+        # Paso 2: Intentar traer los datos de cliente por separado
+        # Así, si falla la tabla clientes, el login SIGUE funcionando
+        try:
+            res_cliente = db.table("clientes").select("*").eq("usuario_id", usuario_id).execute()
+            perfil["clientes"] = res_cliente.data[0] if res_cliente.data else None
+        except Exception:
+            perfil["clientes"] = None # Si falla la tabla clientes, no importa
 
-        return usuario
+        return perfil
+
     except Exception as e:
-        print(f"Error crítico en perfil: {str(e)}")
-        # Esto asegura que el error 500 no bloquee el CORS
-        return JSONResponse(
-            status_code=500,
-            content={"message": "Error interno del servidor", "detail": str(e)}
-        )
+        # Esto nos dirá en los logs de Render qué falló exactamente
+        print(f"ERROR CRÍTICO PERFIL: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 
 @app.post("/auth/perfil", tags=["🔐 Auth"])
