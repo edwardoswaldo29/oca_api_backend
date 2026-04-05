@@ -1341,30 +1341,27 @@ def auth_logout(db: Client = Depends(get_supabase)):
 
 @app.get("/auth/perfil", tags=["🔐 Auth"])
 def auth_get_perfil(usuario_id: str, db: Client = Depends(get_supabase)):
+    """
+    [WEB + USUARIO] Obtiene el perfil completo.
+    Usa tu lógica original de join, pero sin .single() para que no explote.
+    """
     try:
-        # Paso 1: Traer SOLO el usuario. Sin joins, sin complicaciones.
-        res = db.table("usuarios").select("*").eq("id", usuario_id).execute()
-        
-        # Si la lista está vacía, no existe
-        if not res.data or len(res.data) == 0:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado en la tabla pública")
-        
-        perfil = res.data[0]
+        # Mantenemos tu consulta original: select("*, clientes(*)")
+        # Pero usamos .execute() directamente
+        res = db.table("usuarios").select("*, clientes(*)").eq("id", usuario_id).execute()
 
-        # Paso 2: Intentar traer los datos de cliente por separado
-        # Así, si falla la tabla clientes, el login SIGUE funcionando
-        try:
-            res_cliente = db.table("clientes").select("*").eq("usuario_id", usuario_id).execute()
-            perfil["clientes"] = res_cliente.data[0] if res_cliente.data else None
-        except Exception:
-            perfil["clientes"] = None # Si falla la tabla clientes, no importa
-
-        return perfil
+        # Si res.data tiene algo, devolvemos el primer elemento [0]
+        if res.data and len(res.data) > 0:
+            return res.data[0]
+        
+        # Si no hay nada, lanzamos el error que ya conoces
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     except Exception as e:
-        # Esto nos dirá en los logs de Render qué falló exactamente
-        print(f"ERROR CRÍTICO PERFIL: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        # Si algo falla (como el join), devolvemos un 500 pero con detalle
+        # para que veas qué está pasando en la consola del navegador
+        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/auth/perfil", tags=["🔐 Auth"])
