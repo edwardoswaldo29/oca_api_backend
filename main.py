@@ -1341,14 +1341,27 @@ def auth_logout(db: Client = Depends(get_supabase)):
 
 @app.get("/auth/perfil", tags=["🔐 Auth"])
 def auth_get_perfil(usuario_id: str, db: Client = Depends(get_supabase)):
-    """
-    [WEB + USUARIO] Obtiene el perfil completo del usuario logueado.
-    Incluye datos de usuario + perfil de cliente.
-    Úsalo tanto en el navbar como en el panel de usuario.
-    """
-    res = db.table("usuarios").select("*, clientes(*)").eq("id", usuario_id).single().execute()
-    not_found(res.data, "Usuario no encontrado")
-    return res.data
+    try:
+        # 1. Traemos solo el usuario primero para asegurar que existe
+        res = db.table("usuarios").select("*").eq("id", usuario_id).execute()
+        
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        usuario = res.data[0]
+
+        # 2. Intentamos traer el cliente, pero si no hay, no matamos la app
+        res_cliente = db.table("clientes").select("*").eq("usuario_id", usuario_id).execute()
+        usuario["clientes"] = res_cliente.data[0] if res_cliente.data else None
+
+        return usuario
+    except Exception as e:
+        print(f"Error crítico en perfil: {str(e)}")
+        # Esto asegura que el error 500 no bloquee el CORS
+        return JSONResponse(
+            status_code=500,
+            content={"message": "Error interno del servidor", "detail": str(e)}
+        )
 
 
 @app.post("/auth/perfil", tags=["🔐 Auth"])
