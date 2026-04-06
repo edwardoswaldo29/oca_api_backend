@@ -198,7 +198,7 @@ class TicketEstado(BaseModel):
     estado: str  # En_Progreso | Resuelto | Cerrado
 
 class TicketMensaje(BaseModel):
-    contenido: str
+    mensaje: str
     es_interno: bool = False  # True = nota interna, no visible al cliente
 
 # ── [COMPARTIDO] Cupones ──────────────────────────────────────────────
@@ -924,7 +924,7 @@ def admin_responder_ticket(id: int, body: TicketMensaje, autor_id: str, db: Clie
     res = db.table("mensajes_ticket").insert({
         "ticket_id": id,
         "usuario_id": autor_id,
-        "contenido": body.contenido,
+        "contenido": body.mensaje,
         "es_interno": body.es_interno
     }).execute()
 
