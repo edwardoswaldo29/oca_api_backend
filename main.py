@@ -1029,7 +1029,12 @@ def admin_listar_resenas(
     db: Client = Depends(get_supabase)
 ):
     """Lista todas las reseñas pendientes de moderación o ya procesadas."""
-    query = db.table("opiniones_resenas").select("*, usuarios(nombre_completo), software_venta(nombre_sistema), planes_web(nombre_plan)")
+    query = db.table("opiniones_resenas").select("""
+        *, 
+        usuarios!opiniones_usuario_fkey(nombre_completo), 
+        software_venta(nombre_sistema), 
+        planes_web(nombre_plan)
+    """)
     if estado:
         query = query.eq("estado_moderacion", estado)
     return query.execute().data
