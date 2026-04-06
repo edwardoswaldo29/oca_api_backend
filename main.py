@@ -666,7 +666,7 @@ def admin_listar_pagos(
     Lista todos los pagos. Filtros: estado, método de pago, fecha.
     Los pagos son sensibles → sin DELETE normal.
     """
-    query = db.table("pagos").select("*, usuarios(nombre_completo, email)").order("id", desc=True)
+    query = db.table("pagos").select("*, usuarios!pagos_usuario_fkey(nombre_completo, email)").order("id", desc=True)
     if estado_pago:
         query = query.eq("estado_pago", estado_pago)
     if metodo_pago:
@@ -682,7 +682,7 @@ def admin_detalle_pago(id: int, db: Client = Depends(get_supabase)):
     Detalle completo del pago: comprobante, cliente, producto comprado.
     """
     pago = db.table("pagos").select(
-        "*, usuarios(nombre_completo, email), servicios_adquiridos(*, software_venta(*), planes_web(*))"
+        "*, usuarios!pagos_usuario_fkey(nombre_completo, email), servicios_adquiridos(*, software_venta(*), planes_web(*))"
     ).eq("id", id).single().execute()
     not_found(pago.data, "Pago no encontrado")
     return pago.data
@@ -708,8 +708,8 @@ def admin_pago_aprobar(id: int, revisado_por: str, db: Client = Depends(get_supa
     """
     # 1. Obtener el pago y el servicio
     pago = db.table("pagos").select(
-        "*, servicios_adquiridos(*, software_id, plan_id, usuario_id)"
-    ).eq("id", id).single().execute()
+    "*, servicios_adquiridos(*, software_id, plan_id, usuario_id)"
+).eq("id", id).single().execute()
     not_found(pago.data, "Pago no encontrado")
 
     # Validar que tenga comprobante si es Yape/Plin
