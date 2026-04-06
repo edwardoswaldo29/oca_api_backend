@@ -877,7 +877,7 @@ def admin_listar_tickets(
     db: Client = Depends(get_supabase)
 ):
     """Lista todos los tickets de soporte con filtros."""
-    query = db.table("tickets_soporte").select("*, usuarios(nombre_completo, email)").order("id", desc=True)
+    query = db.table("tickets_soporte").select("*, usuarios!tickets_usuario_fkey(nombre_completo, email)").order("id", desc=True)
     if estado:
         query = query.eq("estado", estado)
     if prioridad:
@@ -888,7 +888,7 @@ def admin_listar_tickets(
 @app.get("/admin/tickets/{id}", tags=["📊 Dashboard — Tickets"])
 def admin_detalle_ticket(id: int, db: Client = Depends(get_supabase)):
     """Detalle del ticket con todos sus mensajes (incluye notas internas)."""
-    ticket   = db.table("tickets_soporte").select("*, usuarios(*)").eq("id", id).single().execute()
+    ticket = db.table("tickets_soporte").select("*, usuarios!tickets_usuario_fkey(*)").eq("id", id).single().execute()
     mensajes = db.table("mensajes_ticket").select("*, usuarios(nombre_completo, rol)").eq("ticket_id", id).order("id").execute()
     not_found(ticket.data)
     return {"ticket": ticket.data, "mensajes": mensajes.data}
